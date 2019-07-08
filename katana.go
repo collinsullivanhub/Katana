@@ -212,7 +212,11 @@ func display_beacons(packet gopacket.Packet) {
 }
 
 func printAChart() {
-	data := []float64{1, 4, 6, 3, 6, 3, 6, 3, 5, 6, 11, 2, 3, 4, 2}
+	data := []float64{
+	-43, -56, -41, -55, -77, -82, -81, -60, -61, -57, 
+	-78, -85, -72, -74, -75, -75,-54, -56, -61, -65, 
+	-76, -52, -81,-43, -56, -41, -55, -77, -82, -81, 
+	-60, -61, -57,}
 	graph := asciigraph.Plot(data)
 
 	fmt.Println(graph)
