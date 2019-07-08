@@ -26,8 +26,15 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  	options      gopacket.SerializeOptions
+  options      gopacket.SerializeOptions
 )
+
+type Dot11ApConfig struct {
+	SSID       string
+	BSSID      net.HardwareAddr
+	Channel    int
+	Encryption bool
+}
 
 func send_beacons() {
     // Open device
@@ -37,17 +44,18 @@ func send_beacons() {
 
 
     dot11CoreLayer := &layers.Dot11{
-        Type: 0x0008,
         Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
 				Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
 				Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+				Type: layers.Dot11TypeMgmtBeacon,
     }
+
 
 		dot11EssidLayer := &layers.Dot11InformationElement{
 			Length: 1,
 		}
 		dot11BeaconLayer := &layers.Dot11MgmtBeacon{
-			Interval: 10,
+			Interval: 100,
 		}
     radioLayer := &layers.Ethernet{}
 
