@@ -26,7 +26,7 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  options      gopacket.SerializeOptions
+  	options      gopacket.SerializeOptions
 )
 
 func send_beacons() {
