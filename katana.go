@@ -215,17 +215,6 @@ func display_beacons(packet gopacket.Packet) {
 
 func printAChart() {
 
-	file, err := os.Open("katana.txt")
-    if err != nil {
-        log.Fatal(err)
-    }
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-			log.Fatal(err)
-	}
-
-	chartslice = append(chartslice, data)
-
 	graph := asciigraph.Plot(chartslice)
 	fmt.Println(graph)
 }
