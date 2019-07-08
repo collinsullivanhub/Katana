@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
+	"io/ioutil"
 
 	"github.com/fatih/color"
 	"github.com/google/gopacket"
@@ -26,7 +27,8 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  	options      gopacket.SerializeOptions
+  options      gopacket.SerializeOptions
+	chartslice 	 []float64
 )
 
 var SerializationOptions = gopacket.SerializeOptions{
@@ -212,12 +214,19 @@ func display_beacons(packet gopacket.Packet) {
 }
 
 func printAChart() {
-	data := []float64{-43, -56, -41, -55, -77, -82, 
-	-81, -60, -61, -57, -78, -85, -72, -74, -75, -75,
-	-54, -56, -61, -65, -77, -82, -81,
-	-49, -56, -48, -55, -77, -82, -81, -60, -61, -57,}
-	graph := asciigraph.Plot(data)
 
+	file, err := os.Open("katana.txt")
+    if err != nil {
+        log.Fatal(err)
+    }
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+			log.Fatal(err)
+	}
+
+	chartslice = append(chartslice, data)
+
+	graph := asciigraph.Plot(chartslice)
 	fmt.Println(graph)
 }
 
