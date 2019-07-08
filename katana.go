@@ -95,8 +95,8 @@ func send_beacons() {
   }
 }
 
-
 func main() {
+
 
 	rotate()
 
@@ -126,7 +126,7 @@ func main() {
 	option_select := ""
 	prompt := &survey.Select{
 		Message: "\n",
-		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print Beacon Chart"},
+		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart"},
 	}
 
 	fmt.Print("\n")
@@ -147,7 +147,7 @@ func main() {
 		os.Exit(3)
 	}
 
-	if option_select == "Print Beacon Chart" {
+	if option_select == "Print RTap-Power Chart" {
 		printAChart()
 		os.Exit(3)
 	}
@@ -212,11 +212,8 @@ func display_beacons(packet gopacket.Packet) {
 }
 
 func printAChart() {
-	data := []float64{
-	-43, -56, -41, -55, -77, -82, -81, -60, -61, -57, 
-	-78, -85, -72, -74, -75, -75,-54, -56, -61, -65, 
-	-76, -52, -81,-43, -56, -41, -55, -77, -82, -81, 
-	-60, -61, -57,}
+	data := []float64{-43, -56, -41, -55, -77, -82, -81, -60, -61, -57, -78, -85, -72, -74, -75, -75,-54, -56, -61, -65, -77, -82, -81,
+	-49, -56, -48, -55, -77, -82, -81, -60, -61, -57,}
 	graph := asciigraph.Plot(data)
 
 	fmt.Println(graph)
