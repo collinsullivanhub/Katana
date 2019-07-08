@@ -45,9 +45,9 @@ func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11In
 }
 
 func send_beacons() {
-    // Open device
+
     handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-    if err != nil {log.Fatal(err) }
+    if err != nil {log.Fatal(err)}
     defer handle.Close()
 
 
@@ -79,7 +79,7 @@ func send_beacons() {
 	if err != nil {
 	log.Fatal(err)
 	}
-     }
+  }
 }
 
 func main() {
@@ -114,7 +114,7 @@ func main() {
 	option_select := ""
 	prompt := &survey.Select{
 		Message: "\n",
-		Options: []string{"Start Monitor", "Show beacon statistics", "Look for rogue APs", "Print Beacon Chart"},
+		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print Beacon Chart"},
 	}
 
 	fmt.Print("\n")
@@ -129,8 +129,9 @@ func main() {
 		os.Exit(3)
 	}
 
-	if option_select == "Look for rogue APs" {
-		fmt.Println("Rogue AP list not detected")
+	if option_select == "Send Test Beacons" {
+		fmt.Println("Starting...")
+		send_beacons()
 		os.Exit(3)
 	}
 
