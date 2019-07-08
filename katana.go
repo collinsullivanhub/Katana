@@ -26,7 +26,7 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  	options      gopacket.SerializeOptions
+  options      gopacket.SerializeOptions
 )
 
 func send_beacons() {
@@ -37,27 +37,33 @@ func send_beacons() {
 
 
     dot11CoreLayer := &layers.Dot11{
-        Type: 0,
+        Type: 0x0008,
         Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
-	Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
-	Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+				Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+				Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
     }
 
-    dot11BeaconLayer := &layers.Dot11MgmtBeacon{}
+		dot11EssidLayer := &layers.Dot11InformationElement{
+			Length: 1,
+		}
+		dot11BeaconLayer := &layers.Dot11MgmtBeacon{
+			Interval: 10,
+		}
     radioLayer := &layers.Ethernet{}
 
     buffer = gopacket.NewSerializeBuffer()
     gopacket.SerializeLayers(buffer, options,
-    radioLayer,
-    dot11CoreLayer,
-    dot11BeaconLayer,
+        radioLayer,
+        dot11CoreLayer,
+				dot11BeaconLayer,
+				dot11EssidLayer,
     )
     outgoingPacket := buffer.Bytes()
 
-	err = handle.WritePacketData(outgoingPacket)
-	if err != nil {
-			log.Fatal(err)
-	}
+		err = handle.WritePacketData(outgoingPacket)
+		if err != nil {
+				log.Fatal(err)
+		}
 }
 
 func main() {
