@@ -95,8 +95,8 @@ func send_beacons() {
   }
 }
 
-func main() {
 
+func main() {
 
 	rotate()
 
