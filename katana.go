@@ -97,7 +97,6 @@ func send_beacons() {
 
 func main() {
 
-	//	printAChart()
 
 	rotate()
 
