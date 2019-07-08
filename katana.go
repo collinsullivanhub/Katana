@@ -26,7 +26,7 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  options      gopacket.SerializeOptions
+  	options      gopacket.SerializeOptions
 )
 
 type Dot11ApConfig struct {
@@ -52,34 +52,34 @@ func send_beacons() {
 
 
     dot11CoreLayer := &layers.Dot11{
-        Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
-				Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
-				Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
-				Type: layers.Dot11TypeMgmtBeacon,
+    Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
+    Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+    Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+    Type: layers.Dot11TypeMgmtBeacon,
     }
 
-		dot11BeaconLayer := &layers.Dot11MgmtBeacon{
+    dot11BeaconLayer := &layers.Dot11MgmtBeacon{
 			Interval: 100,
 		}
     radioLayer := &layers.Ethernet{}
 
     buffer = gopacket.NewSerializeBuffer()
     gopacket.SerializeLayers(
-			buffer,
-			options,
+      buffer,
+      options,
       radioLayer,
       dot11CoreLayer,
-			dot11BeaconLayer,
-			Dot11Info(layers.Dot11InformationElementIDSSID, []byte("TestNetworkSpectrum")),
+      dot11BeaconLayer,
+      Dot11Info(layers.Dot11InformationElementIDSSID, []byte("TestNetworkSpectrum")),
     )
     outgoingPacket := buffer.Bytes()
 
-		for {
-		err = handle.WritePacketData(outgoingPacket)
-		if err != nil {
-				log.Fatal(err)
-		}
+     for {
+	err = handle.WritePacketData(outgoingPacket)
+	if err != nil {
+	log.Fatal(err)
 	}
+     }
 }
 
 func main() {
