@@ -29,11 +29,24 @@ var (
   	options      gopacket.SerializeOptions
 )
 
+var SerializationOptions = gopacket.SerializeOptions{
+	FixLengths:       true,
+	ComputeChecksums: true,
+}
+
 type Dot11ApConfig struct {
 	SSID       string
 	BSSID      net.HardwareAddr
 	Channel    int
 	Encryption bool
+}
+
+func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
+	buf := gopacket.NewSerializeBuffer()
+	if err2 := gopacket.SerializeLayers(buf, SerializationOptions, layers...); err2 != nil {
+		return err2, nil
+	}
+	return nil, buf.Bytes()
 }
 
 func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11InformationElement {
