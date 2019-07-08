@@ -36,6 +36,14 @@ type Dot11ApConfig struct {
 	Encryption bool
 }
 
+func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11InformationElement {
+	return &layers.Dot11InformationElement{
+		ID:     id,
+		Length: uint8(len(info) & 0xff),
+		Info:   info,
+	}
+}
+
 func send_beacons() {
     // Open device
     handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
@@ -50,28 +58,28 @@ func send_beacons() {
 				Type: layers.Dot11TypeMgmtBeacon,
     }
 
-
-		dot11EssidLayer := &layers.Dot11InformationElement{
-			Length: 1,
-		}
 		dot11BeaconLayer := &layers.Dot11MgmtBeacon{
 			Interval: 100,
 		}
     radioLayer := &layers.Ethernet{}
 
     buffer = gopacket.NewSerializeBuffer()
-    gopacket.SerializeLayers(buffer, options,
-        radioLayer,
-        dot11CoreLayer,
-				dot11BeaconLayer,
-				dot11EssidLayer,
+    gopacket.SerializeLayers(
+			buffer,
+			options,
+      radioLayer,
+      dot11CoreLayer,
+			dot11BeaconLayer,
+			Dot11Info(layers.Dot11InformationElementIDSSID, []byte("TestNetworkSpectrum")),
     )
     outgoingPacket := buffer.Bytes()
 
+		for {
 		err = handle.WritePacketData(outgoingPacket)
 		if err != nil {
 				log.Fatal(err)
 		}
+	}
 }
 
 func main() {
