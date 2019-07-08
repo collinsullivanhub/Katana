@@ -25,7 +25,40 @@ var (
 	timeout      time.Duration = 1 * time.Second
 	handle       *pcap.Handle
 	counter      int32 = 0
+	buffer       gopacket.SerializeBuffer
+  	options      gopacket.SerializeOptions
 )
+
+func send_beacons() {
+    // Open device
+    handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+    if err != nil {log.Fatal(err) }
+    defer handle.Close()
+
+
+    dot11CoreLayer := &layers.Dot11{
+        Type: 0,
+        Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
+	Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+	Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+    }
+
+    dot11BeaconLayer := &layers.Dot11MgmtBeacon{}
+    radioLayer := &layers.Ethernet{}
+
+    buffer = gopacket.NewSerializeBuffer()
+    gopacket.SerializeLayers(buffer, options,
+    radioLayer,
+    dot11CoreLayer,
+    dot11BeaconLayer,
+    )
+    outgoingPacket := buffer.Bytes()
+
+	err = handle.WritePacketData(outgoingPacket)
+	if err != nil {
+			log.Fatal(err)
+	}
+}
 
 func main() {
 
