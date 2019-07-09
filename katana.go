@@ -27,8 +27,9 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  options      gopacket.SerializeOptions
+  	options      gopacket.SerializeOptions
 	chartslice 	 []float64
+	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
 )
 
 var SerializationOptions = gopacket.SerializeOptions{
@@ -59,24 +60,29 @@ func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11In
 	}
 }
 
+
+
 func send_beacons() {
 
     handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
     if err != nil {log.Fatal(err)}
     defer handle.Close()
 
+    radioLayer := &layers.RadioTap{
+    	DBMAntennaSignal: int8(-10),
+    	ChannelFrequency: layers.RadioTapChannelFrequency(2462),
+    }
 
     dot11CoreLayer := &layers.Dot11{
     Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
-    Address2: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
-    Address3: net.HardwareAddr{0xFF,0xAA,0xFA,0xAA,0xFF,0xAA},
+    Address2: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
+    Address3: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
     Type: layers.Dot11TypeMgmtBeacon,
     }
 
     dot11BeaconLayer := &layers.Dot11MgmtBeacon{
-			Interval: 100,
+			Interval: 1000,
 		}
-    radioLayer := &layers.RadioTap{}
 
     buffer = gopacket.NewSerializeBuffer()
     gopacket.SerializeLayers(
@@ -86,6 +92,7 @@ func send_beacons() {
       dot11CoreLayer,
       dot11BeaconLayer,
       Dot11Info(layers.Dot11InformationElementIDSSID, []byte("TestNetworkSpectrum")),
+      Dot11Info(layers.Dot11InformationElementIDRates, fakeApRates),
     )
     outgoingPacket := buffer.Bytes()
 
