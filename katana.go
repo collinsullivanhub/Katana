@@ -29,7 +29,7 @@ var (
 	buffer       gopacket.SerializeBuffer
   	options      gopacket.SerializeOptions
 	chartslice 	 []float64
-	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	Rates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
 )
 
 var SerializationOptions = gopacket.SerializeOptions{
@@ -77,7 +77,7 @@ func send_beacons() {
     Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
     Address2: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
     Address3: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
-    Type: layers.Dot11TypeMgmtBeacon,
+    Type: 0x08,
     }
 
     dot11BeaconLayer := &layers.Dot11MgmtBeacon{
@@ -91,8 +91,8 @@ func send_beacons() {
       radioLayer,
       dot11CoreLayer,
       dot11BeaconLayer,
-      Dot11Info(layers.Dot11InformationElementIDSSID, []byte("TestNetworkSpectrum")),
-      Dot11Info(layers.Dot11InformationElementIDRates, fakeApRates),
+      Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FreeWiFi")),
+      Dot11Info(layers.Dot11InformationElementIDRates, Rates),
     )
     outgoingPacket := buffer.Bytes()
 
