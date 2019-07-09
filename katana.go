@@ -213,7 +213,7 @@ func printAChart() {
 
 func send_beacons() {
 
-	//Need high TX card such as Atheros or TP-Link
+    //Need high TX card with Atheros chip such as TP-Link
     handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
     if err != nil {log.Fatal(err)}
     defer handle.Close()
