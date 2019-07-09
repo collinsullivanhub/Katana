@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
-	"io/ioutil"
+	//"io/ioutil"
 
 	"github.com/fatih/color"
 	"github.com/google/gopacket"
@@ -76,7 +76,7 @@ func send_beacons() {
     dot11BeaconLayer := &layers.Dot11MgmtBeacon{
 			Interval: 100,
 		}
-    radioLayer := &layers.Ethernet{}
+    radioLayer := &layers.RadioTap{}
 
     buffer = gopacket.NewSerializeBuffer()
     gopacket.SerializeLayers(
