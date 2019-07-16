@@ -33,10 +33,36 @@ var (
 	Rates = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
 )
 
+// DEAUTH ---------------------------------------------------------------------------------------------
 var SerializationOptions = gopacket.SerializeOptions{
 	FixLengths:       true,
 	ComputeChecksums: true,
 }
+
+func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
+	buf := gopacket.NewSerializeBuffer()
+	if err := gopacket.SerializeLayers(buf, SerializationOptions, layers...); err != nil {
+		return err, nil
+	}
+	return nil, buf.Bytes()
+}
+
+func NewDot11Deauth(a1 net.HardwareAddr, a2 net.HardwareAddr, a3 net.HardwareAddr, seq uint16) (error, []byte) {
+	return Serialize(
+		&layers.RadioTap{},
+		&layers.Dot11{
+			Address1:       a1,
+			Address2:       a2,
+			Address3:       a3,
+			Type:           layers.Dot11TypeMgmtDeauthentication,
+			SequenceNumber: seq,
+		},
+		&layers.Dot11MgmtDeauthentication{
+			Reason: layers.Dot11ReasonClass2FromNonAuth,
+		},
+	)
+}
+// DEAUTH --------------------------------------------------------------------------------------------
 
 type Dot11ApConfig struct {
 	SSID       string
