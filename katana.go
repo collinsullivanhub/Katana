@@ -29,29 +29,9 @@ var (
 	buffer       gopacket.SerializeBuffer
   	options      gopacket.SerializeOptions
 	chartslice 	 []float64
-	averageSignalRate int32 = 0
 	openFlags      = 1057
-	wpaFlags       = 1041
-	durationID     = uint16(0x013a)
-	capabilityInfo = uint16(0x0411)
-	listenInterval = uint16(3)
 	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
-	fakeApWpaRSN = []byte{
-		0x01, 0x00, // RSN Version 1
-		0x00, 0x0f, 0xac, 0x02, // Group Cipher Suite : 00-0f-ac TKIP
-		0x02, 0x00, // 2 Pairwise Cipher Suites (next two lines)
-		0x00, 0x0f, 0xac, 0x04, // AES Cipher / CCMP
-		0x00, 0x0f, 0xac, 0x02, // TKIP Cipher
-		0x01, 0x00, // 1 Authentication Key Management Suite (line below)
-		0x00, 0x0f, 0xac, 0x02, // Pre-Shared Key
-		0x00, 0x00,
-	}
-	wpaSignatureBytes = []byte{0, 0x50, 0xf2, 1}
 
-	assocRates        = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c}
-	assocESRates      = []byte{0x0C, 0x12, 0x18, 0x60}
-	assocRSNInfo      = []byte{0x01, 0x00, 0x00, 0x0F, 0xAC, 0x04, 0x01, 0x00, 0x00, 0x0F, 0xAC, 0x04, 0x01, 0x00, 0x00, 0x0F, 0xAC, 0x02, 0x8C, 0x00}
-	assocCapabilities = []byte{0x2C, 0x01, 0x03, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 // DEAUTH ---------------------------------------------------------------------------------------------
@@ -75,6 +55,7 @@ func NewDot11Deauth() (error, []byte) {
     defer handle.Close()
 	
 	radio_layer := &layers.RadioTap{
+		Length: 18,
 		DBMAntennaSignal: int8(-10),
 		ChannelFrequency: layers.RadioTapChannelFrequency(2412),
 	}
