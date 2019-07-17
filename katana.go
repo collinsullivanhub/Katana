@@ -242,6 +242,66 @@ func calculate_dbm_power(packet gopacket.Packet) {
 	}
 }
 
+func chart_dBm(){
+	
+		if err := ui.Init(); err != nil {
+		log.Fatalf("FAILURE: %v", err)
+	}
+	defer ui.Close()
+
+	sinData := (func() []float64 {
+		n := 220
+		ps := make([]float64, n)
+		for i := range ps {
+			ps[i] = 1 + math.Sin(float64(i)/5)
+		}
+		return ps
+	})()
+	//dBm
+	lc := widgets.NewPlot()
+	lc.Title = "dBm readings:"
+	lc.Data = make([][]float64, 1)
+	lc.Data[0] = sinData
+	lc.SetRect(0, 15, 50, 25)
+	lc.AxesColor = ui.ColorWhite
+	lc.LineColors[0] = ui.ColorRed
+	lc.Marker = widgets.MarkerDot
+	//dBi
+	lc2 := widgets.NewPlot()
+	lc2.Title = "dBi readings:"
+	lc2.Data = make([][]float64, 1)
+	lc2.Data[0] = sinData
+	lc2.SetRect(50, 15, 100, 25)
+	lc2.AxesColor = ui.ColorWhite
+	lc2.LineColors[0] = ui.ColorYellow
+
+	draw := func(count int) {
+		lc.Data[0] = sinData[count/2%220:]
+		lc2.Data[0] = sinData[2*count%220:]
+		ui.Render(lc, lc2)
+	}
+
+	tickerCount := 1
+	draw(tickerCount)
+	tickerCount++
+	uiEvents := ui.PollEvents()
+	ticker := time.NewTicker(time.Second).C
+	
+	for {
+		select {
+			
+		case e := <-uiEvents:
+			switch e.ID {
+			case "q", "<C-c>":
+			return}
+			
+		case <-ticker:
+			draw(tickerCount)
+			tickerCount++
+			}
+	    }
+}
+
 func main() {
 
 	rotate()
@@ -273,7 +333,7 @@ func main() {
 	prompt := &survey.Select{
 		Message: "\n",
 		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart",
-			"Observe dBm Rates", "Calculate Average dBm"},
+				  "Observe dBm Rates", "Calculate Average dBm", "Live dBm"},
 	}
 
 	fmt.Print("\n")
@@ -331,6 +391,10 @@ func main() {
 		for packet := range packetSource.Packets() {
 			calculate_dbm_power(packet)
 		}
+	}
+	
+	if option_select == "Live dBm" {
+		chart_dBm()	
 	}
 }
 
