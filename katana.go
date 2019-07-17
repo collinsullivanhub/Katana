@@ -130,7 +130,7 @@ func send_beacons() {
 		radioLayer,
 		dot11CoreLayer,
 		dot11BeaconLayer,
-		Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FREEEEEWIFI")),
+		Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FREE_WIFI")),
 		Dot11Info(layers.Dot11InformationElementIDRates, fakeApRates),
 	)
 	outgoingPacket := buffer.Bytes()
@@ -203,6 +203,7 @@ func display_beacons(packet gopacket.Packet) {
 
 }
 
+//Visualize dBm rates 
 func display_average_power(packet gopacket.Packet) {
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 	if radioInformation != nil {
@@ -216,13 +217,15 @@ func average_power(total int8, x int8) {
 	fmt.Println("Average AP dBm:", total/x)
 }
 
+
+//Takes dBm reading from 2000 beacons and and calls average_power to calculate mean dBm rate
 func calculate_signal_power(packet gopacket.Packet) {
 	dot11Information := packet.Layer(layers.LayerTypeDot11)
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 
 	if radioInformation != nil || dot11Information != nil {
 		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		for count := 0; count > 1000; count++ {
+		for count := 0; count > 2000; count++ {
 			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
 			fmt.Print(".")
 			count += 1
