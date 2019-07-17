@@ -43,6 +43,13 @@ var SerializationOptions = gopacket.SerializeOptions{
 	ComputeChecksums: true,
 }
 
+type Dot11ApConfig struct {
+	SSID       string
+	BSSID      net.HardwareAddr
+	Channel    int
+	Encryption bool
+}
+
 func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
 	buf := gopacket.NewSerializeBuffer()
 	if err := gopacket.SerializeLayers(buf, SerializationOptions, layers...); err != nil {
@@ -144,13 +151,6 @@ func send_beacons() {
 	}
 }
 
-type Dot11ApConfig struct {
-	SSID       string
-	BSSID      net.HardwareAddr
-	Channel    int
-	Encryption bool
-}
-
 func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11InformationElement {
 	return &layers.Dot11InformationElement{
 		ID:     id,
@@ -159,6 +159,7 @@ func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11In
 	}
 }
 
+//parses Dot11 and Radiotap 
 func display_beacons(packet gopacket.Packet) {
 
 	f, err := os.OpenFile("katana.txt", os.O_APPEND|os.O_WRONLY, 0644)
