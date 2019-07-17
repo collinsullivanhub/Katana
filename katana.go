@@ -208,7 +208,7 @@ func display_average_power(packet gopacket.Packet) {
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 	if radioInformation != nil {
 		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		fmt.Print("\u001b[37mAntenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal, "\n")
+		fmt.Print("\u001b[37mAntenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal, "")
 	}
 
 }
