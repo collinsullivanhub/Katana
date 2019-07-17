@@ -31,6 +31,10 @@ var (
 	chartslice 	 []float64
 	openFlags      = 1057
 	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	signal_power := []float64{}
+	var length float64 := 0
+	var total float64 := 0
+	count float64 := 0
 
 )
 
@@ -187,7 +191,8 @@ func main() {
 	option_select := ""
 	prompt := &survey.Select{
 		Message: "\n",
-		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart", "Observe Average Power Rates"},
+		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart",
+				  "Observe dBm Rates", "Calculate Average dBm"},
 	}
 
 	fmt.Print("\n")
@@ -223,22 +228,21 @@ func main() {
 		printAChart()
 	}
 
-	if option_select == "Observe Average Power Rates" {
-		handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-
+	if option_select == "Observe dBm Rates" {
+	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+	if err != nil {log.Fatal(err)}
 	defer handle.Close()
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for packet := range packetSource.Packets() {
-			display_average_power(packet)
-		}
-	}
-
-//end main()
+	for packet := range packetSource.Packets() {display_average_power(packet)}
+	}	
+	
+	if option_select == "Calculate Average dBm" {
+	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+	if err != nil {log.Fatal(err)}
+	defer handle.Close()
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	for packet := range packetSource.Packets() {calculate_signal_power(packet)}
+	}	
 }
 
 
@@ -285,6 +289,7 @@ func display_beacons(packet gopacket.Packet) {
 
 }
 
+
 func display_average_power(packet gopacket.Packet) {
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 	if radioInformation != nil {
@@ -295,14 +300,38 @@ func display_average_power(packet gopacket.Packet) {
 }
 
 
+func average_power(total float64, x float64) {
+	fmt.Println("Average AP dBm:", total/x)
+}
+
+
+func calculate_signal_power(packet gopacket.Packet) {
+	dot11Information := packet.Layer(layers.LayerTypeDot11)
+	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
+	
+	if dot11Information != nil || radioInformation != nil {
+		dot11Information, _ := dot11Information.(*layers.Dot11)
+		radioInformation, _ := radioInformation.(*layers.RadioTap)
+		for count = 0, count++, count > 1000 {
+			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
+			fmt.Print(".")
+			count += 1
+		}
+		for _, value := range signal_power {
+			total += value
+			length++
+		}
+		average_power(total, length)		
+	}		
+}	
+		
+
 func printAChart() {
 
 	//Develop
 	graph := asciigraph.Plot(chartslice)
 	fmt.Println(graph)
 }
-
-
 
 
 func printA() {
