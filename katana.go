@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
 	//"io/ioutil"
 
 	"github.com/fatih/color"
