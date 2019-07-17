@@ -160,6 +160,82 @@ func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11In
 	}
 }
 
+func display_beacons(packet gopacket.Packet) {
+
+	f, err := os.OpenFile("katana.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("failed: %s", err)
+	}
+	defer f.Close()
+
+	dot11Information := packet.Layer(layers.LayerTypeDot11)
+	//dot11elementInformation := packet.Layer(layers.LayerTypeDot11InformationElement)
+	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
+
+	//DOT11 ADDR INFORMATION
+	if dot11Information != nil || radioInformation != nil {
+
+		dot11Information, _ := dot11Information.(*layers.Dot11)
+		//dot11elementInformation, _ := dot11elementInformation.(*layers.Dot11InformationElement)
+		radioInformation, _ := radioInformation.(*layers.RadioTap)
+
+		counter += 1
+
+		fmt.Print("\u001b[37mStation: \u001b[32m", dot11Information.Address3,
+			" \u001b[37mDestination: \u001b[32m", dot11Information.Address1,
+			" \u001b[37mData: \u001b[33m", dot11Information.Type,
+			" \u001b[37mSequenceNumber: \u001b[33m", dot11Information.SequenceNumber,
+			" \u001b[37mFrequency: \u001b[34m", radioInformation.ChannelFrequency,
+			" \u001b[37mDBM Antenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal,
+			" \u001b[37mRate: \u001b[33m", radioInformation.Rate,
+			" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
+			" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
+			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
+			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
+			" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
+		//"ESSID: ", dot11elementInformation.Info)
+
+		if dot11Information.Address3 != nil {
+			fmt.Fprintln(f, dot11Information.Address3)
+		}
+
+		fmt.Println("")
+	}
+
+}
+
+func display_average_power(packet gopacket.Packet) {
+	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
+	if radioInformation != nil {
+		radioInformation, _ := radioInformation.(*layers.RadioTap)
+		fmt.Print("\u001b[37mAntenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal, "\n")
+	}
+
+}
+
+func average_power(total int8, x int8) {
+	fmt.Println("Average AP dBm:", total/x)
+}
+
+func calculate_signal_power(packet gopacket.Packet) {
+	dot11Information := packet.Layer(layers.LayerTypeDot11)
+	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
+
+	if radioInformation != nil || dot11Information != nil {
+		radioInformation, _ := radioInformation.(*layers.RadioTap)
+		for count := 0; count > 1000; count++ {
+			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
+			fmt.Print(".")
+			count += 1
+		}
+		for _, value := range signal_power {
+			total += value
+			length++
+		}
+		average_power(total, length)
+	}
+}
+
 func main() {
 
 	rotate()
@@ -249,82 +325,6 @@ func main() {
 		for packet := range packetSource.Packets() {
 			calculate_signal_power(packet)
 		}
-	}
-}
-
-func display_beacons(packet gopacket.Packet) {
-
-	f, err := os.OpenFile("katana.txt", os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("failed: %s", err)
-	}
-	defer f.Close()
-
-	dot11Information := packet.Layer(layers.LayerTypeDot11)
-	//dot11elementInformation := packet.Layer(layers.LayerTypeDot11InformationElement)
-	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-
-	//DOT11 ADDR INFORMATION
-	if dot11Information != nil || radioInformation != nil {
-
-		dot11Information, _ := dot11Information.(*layers.Dot11)
-		//dot11elementInformation, _ := dot11elementInformation.(*layers.Dot11InformationElement)
-		radioInformation, _ := radioInformation.(*layers.RadioTap)
-
-		counter += 1
-
-		fmt.Print("\u001b[37mStation: \u001b[32m", dot11Information.Address3,
-			" \u001b[37mDestination: \u001b[32m", dot11Information.Address1,
-			" \u001b[37mData: \u001b[33m", dot11Information.Type,
-			" \u001b[37mSequenceNumber: \u001b[33m", dot11Information.SequenceNumber,
-			" \u001b[37mFrequency: \u001b[34m", radioInformation.ChannelFrequency,
-			" \u001b[37mDBM Antenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal,
-			" \u001b[37mRate: \u001b[33m", radioInformation.Rate,
-			" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
-			" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
-			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
-			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
-			" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
-		//"ESSID: ", dot11elementInformation.Info)
-
-		if dot11Information.Address3 != nil {
-			fmt.Fprintln(f, dot11Information.Address3)
-		}
-
-		fmt.Println("")
-	}
-
-}
-
-func display_average_power(packet gopacket.Packet) {
-	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-	if radioInformation != nil {
-		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		fmt.Print("\u001b[37mAntenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal, "\n")
-	}
-
-}
-
-func average_power(total int8, x int8) {
-	fmt.Println("Average AP dBm:", total/x)
-}
-
-func calculate_signal_power(packet gopacket.Packet) {
-	dot11Information := packet.Layer(layers.LayerTypeDot11)
-	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-
-	if radioInformation != nil || dot11Information != nil {
-		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		for count := 0; count > 1000; count++ {
-			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
-			fmt.Print(".")
-			count += 1
-		}
-		for _, value := range signal_power {
-			total += value
-			length++
-		}
-		average_power(total, length)
 	}
 }
 
