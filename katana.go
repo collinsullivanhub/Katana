@@ -362,6 +362,7 @@ func printC() {
 
 }
 
+//Animation handling
 func rotate() {
 	for {
 		printA()
