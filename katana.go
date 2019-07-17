@@ -193,7 +193,7 @@ func display_beacons(packet gopacket.Packet) {
 			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
 			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
 			" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
-		//"ESSID: ", dot11elementInformation.Info)
+			//"ESSID: ", dot11elementInformation.Info)
 
 		if dot11Information.Address3 != nil {
 			fmt.Fprintln(f, dot11Information.Address3)
@@ -214,13 +214,14 @@ func display_average_power(packet gopacket.Packet) {
 
 }
 
+//Pass into calculate_dbm_power
 func average_power(total int8, x int8) {
 	fmt.Println("Average AP dBm:", total/x)
 }
 
 
 //Takes dBm reading from 2000 beacons and and calls average_power to calculate mean dBm rate
-func calculate_signal_power(packet gopacket.Packet) {
+func calculate_dbm_power(packet gopacket.Packet) {
 	dot11Information := packet.Layer(layers.LayerTypeDot11)
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 
@@ -326,7 +327,7 @@ func main() {
 		defer handle.Close()
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
-			calculate_signal_power(packet)
+			calculate_dbm_power(packet)
 		}
 	}
 }
@@ -412,7 +413,7 @@ func rotate() {
 		bar := progressbar.New(100)
 		for i := 0; i < 100; i++ {
 			bar.Add(1)
-			time.Sleep(5 * time.Millisecond)
+			time.Sleep(2 * time.Millisecond)
 		}
 		clearscreen := exec.Command("clear")
 		clearscreen.Stdout = os.Stdout
