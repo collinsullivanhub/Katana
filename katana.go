@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"math"
@@ -39,6 +40,7 @@ var (
 	length       int8 = 0
 	total        int8 = 0
 	count        int8 = 0
+	intlines     []int8
 )
 
 // DEAUTH ---------------------------------------------------------------------------------------------
@@ -254,15 +256,21 @@ func calculate_dbm_power(packet gopacket.Packet) {
 
 func pass_to_conversion() {
 	//Open file containing dBi rates
-	rate_file, err := os.OpenFile("rates.txt", os.O_RDWR|os.O_WRONLY, 0644)
+	file, err := os.Open("rates.txt")
 	if err != nil {
 		log.Fatalf("Failure: %s", err)
 	}
-	defer rate_file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	//Pass dBm value to []int8 intlines slice
+	for scanner.Scan() {
+		intlines = append(intlines)
+	}
 }
 
 func convert_int_to_float(x int8) {
-	for {
+	//convert each value from []intlines to float64 and pass to []float64 chartslice
+	for _, x := range intlines {
 		dBm_int := x
 		z := float64(dBm_int)
 		w := []float64{}
@@ -287,6 +295,7 @@ func chart_dBm() {
 		return ps
 	})()
 
+	//Use use values from float64[]chartslice for lc.Data
 	//dBm
 	lc := widgets.NewPlot()
 	lc.Title = "dBm readings:"
