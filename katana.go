@@ -283,7 +283,8 @@ func display_beacons(packet gopacket.Packet) {
 			" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
 			" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
 			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
-			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter)
+			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
+			" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
 		//"ESSID: ", dot11elementInformation.Info)
 
 		if dot11Information.Address3 != nil {
