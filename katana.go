@@ -3,21 +3,23 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"os/exec"
 	"time"
+
 	//"io/ioutil"
 
 	"github.com/fatih/color"
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/guptarohit/asciigraph"
 	"github.com/schollz/progressbar"
 	"gopkg.in/AlecAivazis/survey.v1"
-	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
 )
 
 var (
@@ -161,7 +163,7 @@ func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11In
 	}
 }
 
-//parses Dot11 and Radiotap 
+//parses Dot11 and Radiotap
 func display_beacons(packet gopacket.Packet) {
 
 	f, err := os.OpenFile("katana.txt", os.O_APPEND|os.O_WRONLY, 0644)
@@ -195,7 +197,7 @@ func display_beacons(packet gopacket.Packet) {
 			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
 			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
 			" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
-			//"ESSID: ", dot11elementInformation.Info)
+		//"ESSID: ", dot11elementInformation.Info)
 
 		if dot11Information.Address3 != nil {
 			fmt.Fprintln(f, dot11Information.Address3)
@@ -206,7 +208,7 @@ func display_beacons(packet gopacket.Packet) {
 
 }
 
-//Visualize dBm rates 
+//Visualize dBm rates
 func display_average_power(packet gopacket.Packet) {
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 	if radioInformation != nil {
@@ -220,7 +222,6 @@ func display_average_power(packet gopacket.Packet) {
 func average_power(total int8, x int8) {
 	fmt.Println("Average AP dBm:", total/x)
 }
-
 
 //Takes dBm reading from 2000 beacons and and calls average_power to calculate mean dBm rate
 func calculate_dbm_power(packet gopacket.Packet) {
@@ -242,9 +243,19 @@ func calculate_dbm_power(packet gopacket.Packet) {
 	}
 }
 
-func chart_dBm(){
-	
-		if err := ui.Init(); err != nil {
+func convert_int_to_float(x int8) {
+	for {
+		dBm_int := x
+		z := float64(dBm_int)
+		w := []float64{}
+		fmt.Print(w)
+		w = append(chartslice, z)
+	}
+}
+
+func chart_dBm() {
+
+	if err := ui.Init(); err != nil {
 		log.Fatalf("FAILURE: %v", err)
 	}
 	defer ui.Close()
@@ -257,6 +268,7 @@ func chart_dBm(){
 		}
 		return ps
 	})()
+
 	//dBm
 	lc := widgets.NewPlot()
 	lc.Title = "dBm readings:"
@@ -266,6 +278,7 @@ func chart_dBm(){
 	lc.AxesColor = ui.ColorWhite
 	lc.LineColors[0] = ui.ColorRed
 	lc.Marker = widgets.MarkerDot
+
 	//dBi
 	lc2 := widgets.NewPlot()
 	lc2.Title = "dBi readings:"
@@ -286,20 +299,21 @@ func chart_dBm(){
 	tickerCount++
 	uiEvents := ui.PollEvents()
 	ticker := time.NewTicker(time.Second).C
-	
+
 	for {
 		select {
-			
+
 		case e := <-uiEvents:
 			switch e.ID {
 			case "q", "<C-c>":
-			return}
-			
+				return
+			}
+
 		case <-ticker:
 			draw(tickerCount)
 			tickerCount++
-			}
-	    }
+		}
+	}
 }
 
 func main() {
@@ -333,7 +347,7 @@ func main() {
 	prompt := &survey.Select{
 		Message: "\n",
 		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart",
-				  "Observe dBm Rates", "Calculate Average dBm", "Live dBm"},
+			"Observe dBm Rates", "Calculate Average dBm", "Live dBm"},
 	}
 
 	fmt.Print("\n")
@@ -392,9 +406,9 @@ func main() {
 			calculate_dbm_power(packet)
 		}
 	}
-	
+
 	if option_select == "Live dBm" {
-		chart_dBm()	
+		chart_dBm()
 	}
 }
 
