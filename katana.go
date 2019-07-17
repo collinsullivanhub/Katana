@@ -16,6 +16,8 @@ import (
 	"github.com/guptarohit/asciigraph"
 	"github.com/schollz/progressbar"
 	"gopkg.in/AlecAivazis/survey.v1"
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 )
 
 var (
