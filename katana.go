@@ -34,9 +34,9 @@ var (
 	buffer       gopacket.SerializeBuffer
 	options      gopacket.SerializeOptions
 	chartslice   []float64
-	openFlags         = 1057
-	fakeApRates       = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
-	signal_power      = []int8{}
+	openFlags    = 1057
+	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	signal_power = []int8{}
 	length       int8 = 0
 	total        int8 = 0
 	count        int8 = 0
