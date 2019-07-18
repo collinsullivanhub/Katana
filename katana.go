@@ -373,9 +373,13 @@ func capture_monitor() {
 }
 
 func show_monitoring() {
+	//poor way to deal with race condition -> implement mutex lock next
 	go capture_monitor()
+	time.Sleep(5 * time.Millisecond)
 	go pass_to_conversion()
+	time.Sleep(2 * time.Millisecond)
 	go convert_int_to_float()
+	time.Sleep(2 * time.Millisecond)
 	go chart_dBm()
 }
 
