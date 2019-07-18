@@ -58,8 +58,8 @@ type Dot11ApConfig struct {
 
 func Serialize(layers ...gopacket.SerializableLayer) (error, []byte) {
 	buf := gopacket.NewSerializeBuffer()
-	if err := gopacket.SerializeLayers(buf, SerializationOptions, layers...); err != nil {
-		return err, nil
+	if err2 := gopacket.SerializeLayers(buf, SerializationOptions, layers...); err2 != nil {
+		return err2, nil
 	}
 	return nil, buf.Bytes()
 }
@@ -112,7 +112,7 @@ func NewDot11Deauth() (error, []byte) {
 func send_beacons() {
 	flags := openFlags
 
-	//Need high TX card with Atheros chip such as TP-Link
+	//Need high TX card with Atheros chip
 	handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
 	if err != nil {
 		log.Fatal(err)
@@ -268,7 +268,7 @@ func pass_to_conversion() {
 	}
 }
 
-func convert_int_to_float(x int8) {
+func convert_int_to_float() {
 	//convert each value from []intlines to float64 and pass to []float64 chartslice
 	for _, x := range intlines {
 		dBm_int := x
@@ -300,7 +300,7 @@ func chart_dBm() {
 	lc := widgets.NewPlot()
 	lc.Title = "dBm readings:"
 	lc.Data = make([][]float64, 1)
-	lc.Data[0] = sinData
+	lc.Data[0] = chartslice
 	lc.SetRect(0, 15, 50, 25)
 	lc.AxesColor = ui.ColorWhite
 	lc.LineColors[0] = ui.ColorRed
@@ -310,7 +310,7 @@ func chart_dBm() {
 	lc2 := widgets.NewPlot()
 	lc2.Title = "dBi readings:"
 	lc2.Data = make([][]float64, 1)
-	lc2.Data[0] = sinData
+	lc2.Data[0] = chartslice
 	lc2.SetRect(50, 15, 100, 25)
 	lc2.AxesColor = ui.ColorWhite
 	lc2.LineColors[0] = ui.ColorYellow
@@ -341,6 +341,42 @@ func chart_dBm() {
 			tickerCount++
 		}
 	}
+}
+
+func perform_live_monitoring(packet gopacket.Packet) {
+	rate_file, err := os.OpenFile("rates.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("failed: %s", err)
+	}
+	defer rate_file.Close()
+
+	dot11Information := packet.Layer(layers.LayerTypeDot11)
+	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
+
+	if radioInformation != nil || dot11Information != nil {
+		radioInformation, _ := radioInformation.(*layers.RadioTap)
+		for count := 0; count > 2000; count++ {
+			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
+			fmt.Fprintln(rate_file, radioInformation.DBMAntennaSignal)
+			fmt.Print(".")
+			count += 1
+		}
+
+	}
+}
+
+func capture_monitor() {
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	for packet := range packetSource.Packets() {
+		perform_live_monitoring(packet)
+	}
+}
+
+func show_monitoring() {
+	go capture_monitor()
+	go pass_to_conversion()
+	go convert_int_to_float()
+	go chart_dBm()
 }
 
 func main() {
@@ -435,7 +471,7 @@ func main() {
 	}
 
 	if option_select == "Live dBm" {
-		chart_dBm()
+		show_monitoring()
 	}
 }
 
