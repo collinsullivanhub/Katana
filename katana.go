@@ -220,12 +220,11 @@ func display_average_power(packet gopacket.Packet) {
 
 }
 
-//Pass into calculate_dbm_power
 func average_power(total int8, x int8) {
 	fmt.Println("Average AP dBm:", total/x)
 }
 
-//Takes dBm reading from 2000 beacons and and calls average_power to calculate mean dBm rate
+//Takes sample of 2000 dBm readings/calculates mean
 func calculate_dbm_power(packet gopacket.Packet) {
 
 	//Open file containing dBi rates
@@ -296,6 +295,7 @@ func chart_dBm() {
 	})()
 
 	//Use use values from float64[]chartslice for lc.Data
+	
 	//dBm
 	lc := widgets.NewPlot()
 	lc.Title = "dBm readings:"
