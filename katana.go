@@ -373,7 +373,7 @@ func capture_monitor() {
 }
 
 func show_monitoring() {
-	//poor way to deal with race condition -> implement mutex lock next
+	//poor way to deal with race condition -> implement mutex lock next!
 	go capture_monitor()
 	time.Sleep(5 * time.Millisecond)
 	go pass_to_conversion()
