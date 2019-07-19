@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	//"io/ioutil"
@@ -34,9 +35,9 @@ var (
 	buffer       gopacket.SerializeBuffer
 	options      gopacket.SerializeOptions
 	chartslice   []float64
-	openFlags    = 1057
-	fakeApRates  = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
-	signal_power = []int8{}
+	openFlags         = 1057
+	fakeApRates       = []byte{0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01}
+	signal_power      = []int8{}
 	length       int8 = 0
 	total        int8 = 0
 	count        int8 = 0
@@ -187,22 +188,37 @@ func display_beacons(packet gopacket.Packet) {
 
 		counter += 1
 
-		fmt.Print("\u001b[37mStation: \u001b[32m", dot11Information.Address3,
-			" \u001b[37mDestination: \u001b[32m", dot11Information.Address1,
-			" \u001b[37mData: \u001b[33m", dot11Information.Type,
-			" \u001b[37mSequenceNumber: \u001b[33m", dot11Information.SequenceNumber,
-			" \u001b[37mFrequency: \u001b[34m", radioInformation.ChannelFrequency,
-			" \u001b[37mDBM Antenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal,
-			" \u001b[37mRate: \u001b[33m", radioInformation.Rate,
-			" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
-			" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
-			" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
-			" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
-			" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
 		//"ESSID: ", dot11elementInformation.Info)
 
 		if dot11Information.Address3 != nil {
 			fmt.Fprintln(f, dot11Information.Address3)
+			fmt.Print("\u001b[31mStation: \u001b[33m", dot11Information.Address3,
+				" \u001b[37mDestination: \u001b[32m", dot11Information.Address1,
+				" \u001b[37mData: \u001b[33m", dot11Information.Type,
+				" \u001b[37mSequenceNumber: \u001b[33m", dot11Information.SequenceNumber,
+				" \u001b[37mFrequency: \u001b[34m", radioInformation.ChannelFrequency,
+				" \u001b[37mDBM Antenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal,
+				" \u001b[37mRate: \u001b[33m", radioInformation.Rate,
+				" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
+				" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
+				" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
+				" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
+				" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
+		}
+		if dot11Information.Address3 == nil {
+			fmt.Fprintln(f, dot11Information.Address3)
+			fmt.Print("\u001b[31mStation: ", "--:--:--:--:--:--\u001b[32m",
+				" \u001b[37mDestination: \u001b[32m", dot11Information.Address1,
+				" \u001b[37mData: \u001b[33m", dot11Information.Type,
+				" \u001b[37mSequenceNumber: \u001b[33m", dot11Information.SequenceNumber,
+				" \u001b[37mFrequency: \u001b[34m", radioInformation.ChannelFrequency,
+				" \u001b[37mDBM Antenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal,
+				" \u001b[37mRate: \u001b[33m", radioInformation.Rate,
+				" \u001b[37mTX Attenuation: \u001b[35m", radioInformation.TxAttenuation,
+				" \u001b[37mDBTx Attenuation: \u001b[35m", radioInformation.DBTxAttenuation,
+				" \u001b[37mDBMTxPower: \u001b[35m", radioInformation.DBMTxPower,
+				" \u001b[37mAntenna: \u001b[35m", radioInformation.Antenna, " \u001b[31m Beacons Captured: ", counter,
+				" \u001b[37mRF Antenna Power: \u001b[35m", radioInformation.DBAntennaSignal)
 		}
 
 		fmt.Println("")
@@ -212,11 +228,11 @@ func display_beacons(packet gopacket.Packet) {
 
 //Visualize dBm rates
 func display_average_power(packet gopacket.Packet) {
-	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-	if radioInformation != nil {
-		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		fmt.Print("\u001b[37mAntenna Signal: \u001b[34m", radioInformation.DBMAntennaSignal, "")
+	rate_file, err := os.OpenFile("rates.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("failed: %s", err)
 	}
+	defer rate_file.Close()
 
 }
 
@@ -225,7 +241,7 @@ func average_power(total int8, x int8) {
 }
 
 //Takes sample of 2000 dBm readings/calculates mean
-func calculate_dbm_power(packet gopacket.Packet) {
+func calculate_dbm_power() {
 
 	//Open file containing dBi rates
 	rate_file, err := os.OpenFile("rates.txt", os.O_APPEND|os.O_WRONLY, 0644)
@@ -233,28 +249,16 @@ func calculate_dbm_power(packet gopacket.Packet) {
 		log.Fatalf("failed: %s", err)
 	}
 	defer rate_file.Close()
-
-	dot11Information := packet.Layer(layers.LayerTypeDot11)
-	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-
-	if radioInformation != nil || dot11Information != nil {
-		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		for count := 0; count > 2000; count++ {
-			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
-			fmt.Fprintln(rate_file, radioInformation.DBMAntennaSignal)
-			fmt.Print(".")
-			count += 1
-		}
-		for _, value := range signal_power {
-			total += value
-			length++
-		}
-		average_power(total, length)
+	for _, value := range signal_power {
+		total += value
+		length++
 	}
+
+	average_power(total, length)
 }
 
-func pass_to_conversion() {
-	//Open file containing dBi rates
+func convert_int_to_float() {
+	//convert each value from []intlines to float64 and pass to []float64 chartslice
 	file, err := os.Open("rates.txt")
 	if err != nil {
 		log.Fatalf("Failure: %s", err)
@@ -263,19 +267,29 @@ func pass_to_conversion() {
 	scanner.Split(bufio.ScanLines)
 	//Pass dBm value to []int8 intlines slice
 	for scanner.Scan() {
-		intlines = append(intlines)
+		fmt.Println(scanner.Text())
+		i, err := strconv.Atoi(scanner.Text())
+		if err != nil {
+			fmt.Print(err)
+		}
+		f := int8(i)
+		intlines = append(intlines, f)
 	}
-}
-
-func convert_int_to_float() {
-	//convert each value from []intlines to float64 and pass to []float64 chartslice
-	for _, x := range intlines {
-		dBm_int := x
+	for _, c := range intlines {
+		dBm_int := c
 		z := float64(dBm_int)
 		w := []float64{}
 		fmt.Print(w)
 		w = append(chartslice, z)
+		fmt.Print(c)
 	}
+}
+
+func show_monitoring() {
+	//poor way to deal with race condition -> implement mutex lock next!
+
+	convert_int_to_float()
+	chart_dBm()
 }
 
 func chart_dBm() {
@@ -295,7 +309,7 @@ func chart_dBm() {
 	})()
 
 	//Use use values from float64[]chartslice for lc.Data
-	
+
 	//dBm
 	lc := widgets.NewPlot()
 	lc.Title = "dBm readings:"
@@ -343,49 +357,10 @@ func chart_dBm() {
 	}
 }
 
-func perform_live_monitoring(packet gopacket.Packet) {
-	rate_file, err := os.OpenFile("rates.txt", os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("failed: %s", err)
-	}
-	defer rate_file.Close()
-
-	dot11Information := packet.Layer(layers.LayerTypeDot11)
-	radioInformation := packet.Layer(layers.LayerTypeRadioTap)
-
-	if radioInformation != nil || dot11Information != nil {
-		radioInformation, _ := radioInformation.(*layers.RadioTap)
-		for count := 0; count > 2000; count++ {
-			signal_power = append(signal_power, radioInformation.DBMAntennaSignal)
-			fmt.Fprintln(rate_file, radioInformation.DBMAntennaSignal)
-			fmt.Print(".")
-			count += 1
-		}
-
-	}
-}
-
-func capture_monitor() {
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for packet := range packetSource.Packets() {
-		perform_live_monitoring(packet)
-	}
-}
-
-func show_monitoring() {
-	//poor way to deal with race condition -> implement mutex lock next!
-	go capture_monitor()
-	time.Sleep(5 * time.Millisecond)
-	go pass_to_conversion()
-	time.Sleep(2 * time.Millisecond)
-	go convert_int_to_float()
-	time.Sleep(2 * time.Millisecond)
-	go chart_dBm()
-}
-
+//--------------------------------------------------------------------------------------------------------------------------------------
 func main() {
 
-	rotate()
+	//rotate()
 
 	addrs, err := net.InterfaceAddrs()
 
@@ -398,7 +373,6 @@ func main() {
 	print_interfaces.Stdout = os.Stdout
 	print_interfaces.Run()
 
-	fmt.Println("__________________________________________________________________________")
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To16() != nil {
@@ -408,12 +382,10 @@ func main() {
 		}
 	}
 
-	fmt.Println("__________________________________________________________________________")
-
 	option_select := ""
 	prompt := &survey.Select{
 		Message: "\n",
-		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons", "Print RTap-Power Chart",
+		Options: []string{"Start Monitor", "Show beacon statistics", "Send Test Beacons",
 			"Observe dBm Rates", "Calculate Average dBm", "Live dBm"},
 	}
 
@@ -437,17 +409,12 @@ func main() {
 	}
 
 	if option_select == "Show beacon statistics" {
-		fmt.Println("Here are the statistics:")
-		os.Exit(3)
+		fmt.Print(counter)
 	}
 
 	if option_select == "Send Test Beacons" {
 		fmt.Println("Starting...")
-		NewDot11Deauth()
-	}
-
-	if option_select == "Print RTap-Power Chart" {
-		printAChart()
+		send_beacons()
 	}
 
 	if option_select == "Observe dBm Rates" {
@@ -463,15 +430,8 @@ func main() {
 	}
 
 	if option_select == "Calculate Average dBm" {
-		handle, err = pcap.OpenLive(device, snapshot_len, promiscuous, timeout)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer handle.Close()
-		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-		for packet := range packetSource.Packets() {
-			calculate_dbm_power(packet)
-		}
+
+		calculate_dbm_power()
 	}
 
 	if option_select == "Live dBm" {
@@ -479,6 +439,7 @@ func main() {
 	}
 }
 
+//--------------------------------------------------------------------------------------------------------------------------------------
 func printAChart() {
 
 	//Develop
