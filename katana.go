@@ -44,7 +44,6 @@ var (
 	intlines     []int8
 )
 
-// DEAUTH ---------------------------------------------------------------------------------------------
 var SerializationOptions = gopacket.SerializeOptions{
 	FixLengths:       true,
 	ComputeChecksums: true,
